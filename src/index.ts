@@ -18,14 +18,19 @@ const start = async () => {
     console.log('connected to db')
     const db = database.db('maciek-db');
     const collection = db.collection('products');
-    // await collection.insertMany([
-    //     { productName: 'Product 1', strainName: 'Strain 1', genetics: 'Genetics 1', thcLevel: '20%', cbdLevel: '5%', terpen: 'Terpen 1' },
-    //     { productName: 'Product 2', strainName: 'Strain 2', genetics: 'Genetics 2', thcLevel: '18%', cbdLevel: '3%', terpen: 'Terpen 2' },
-    //     { productName: 'Product 3', strainName: 'Strain 3', genetics: 'Genetics 3', thcLevel: '22%', cbdLevel: '2%', terpen: 'Terpen 3' }
-    // ])
+  
     app.get('/products', async(req, res) => {
         const products = await collection.find().toArray();
         return res.status(200).send(products)
+    })
+    app.post('/create-product', async(req, res) => {
+      const product = req.body.product;
+      try {
+        await collection.insertOne(product)
+        return res.status(200).send('Product created')
+      }catch(err) {
+        return res.status(504).send(err)
+      }
     })
     app.listen(process.env.PORT);
     console.log(`Server with Mongo running on port ${process.env.PORT}`);
