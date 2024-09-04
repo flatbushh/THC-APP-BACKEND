@@ -87,6 +87,7 @@ const start = async () => {
         thcLevel: data.thcLevel,
         cbdLevel: data.cbdLevel,
         terpen: data.terpen,
+        description: data.description,
       };
       try {
         await collection.insertOne(newProduct);
