@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { MongoClient, ObjectId } from "mongodb";
+import bcrypt from "bcrypt";
 
 const app = express();
 app.use(express.json());
@@ -17,17 +18,16 @@ const start = async () => {
     console.log("connected to db");
     const db = database.db("maciek-db");
     const collection = db.collection("products");
+    const usersCollection = db.collection("users");
+
     app.post("/products", async (request, response) => {
-      // tutaj zmienilem na post, zebysmy mogli przeslac req.body, zmien tez na froncie, bo przestanie dzialac
       const filterParams = request.body;
       console.log(filterParams);
       // to nasze filterParams moze zawierac kazdy parametr, po ktorym chcemy filtrowac
-      // na razie filtrujemy tylko po "producentName"
       const thcLevelRange = Array.isArray(filterParams.thcLevel);
       const cbdLevelRange = Array.isArray(filterParams.cbdLevel);
 
       const producentNameRegex = new RegExp(filterParams.producentName, "i");
-
       // Query the database
 
       const products = await collection
@@ -89,12 +89,53 @@ const start = async () => {
         terpen: data.terpen,
         description: data.description,
       };
+
       try {
         await collection.insertOne(newProduct);
         return response.status(201).send("Created!");
       } catch (err) {
         return response.status(504).send(err);
       }
+    });
+
+    app.post("/register", async (request, response) => {
+      const data = request.body;
+      console.log("console log w endpoincie register", data);
+      console.log(data.password);
+      const hashedPassword = await bcrypt.hash(data.password, 10);
+      const newUser = {
+        email: data.email,
+        password: hashedPassword,
+      };
+      try {
+        await usersCollection.insertOne(newUser);
+        return response.status(201).send("Created!");
+      } catch (err) {
+        return response.status(504).send(err);
+      }
+    });
+
+    app.post("/login", async (request, response) => {
+      // w req.body powinien byc email i haslo (string)
+      const data = request.body;
+      console.log("console log w endpoincie login", data);
+
+      // tutaj musisz wyszukac uzytkownika po mailu (req.body.email)
+      const user = await usersCollection.findOne({ email: data.email });
+      if (!user) {
+        return response.status(404).send("User not found");
+      }
+
+      const isPasswordMatch = await bcrypt.compare(
+        "qwerty",
+        user.password //haslo z bazy zaszyfrowan
+      );
+
+      console.log(isPasswordMatch);
+      if (!isPasswordMatch) {
+        return response.status(504).send("Password does not match");
+      }
+      return response.status(200);
     });
 
     app.get("/product/:id", async (request, response) => {
