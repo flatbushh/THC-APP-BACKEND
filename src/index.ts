@@ -101,7 +101,10 @@ const start = async () => {
     app.post("/register", async (request, response) => {
       const data = request.body;
       console.log("console log w endpoincie register", data);
-      console.log(data.password);
+      const userExists = await usersCollection.findOne({ email: data.email });
+      if (userExists) {
+        return response.status(504).send("User already exists");
+      }
       const hashedPassword = await bcrypt.hash(data.password, 10);
       const newUser = {
         email: data.email,
@@ -127,15 +130,13 @@ const start = async () => {
       }
 
       const isPasswordMatch = await bcrypt.compare(
-        "qwerty",
+        data.password,
         user.password //haslo z bazy zaszyfrowan
       );
-
-      console.log(isPasswordMatch);
       if (!isPasswordMatch) {
         return response.status(504).send("Password does not match");
       }
-      return response.status(200);
+      return response.status(200).send("User logged");
     });
 
     app.get("/product/:id", async (request, response) => {
@@ -146,6 +147,19 @@ const start = async () => {
         return response.status(200).send(product);
       } catch (err) {
         return response.status(500).send(err);
+      }
+    });
+
+    app.get("/users", async (request, response) => {
+      try {
+        const users = await usersCollection.find({}); //find pobiera wszystkich userów z kolekcji usersCollection, {} -nie filtruję, poniewa pobieram wszystkich userów istniejących w bazie danych
+        const mappedUsers = users.map(({ _id, email }) => ({
+          id: _id,
+          email: email,
+        }));
+        return response.status(200).send(mappedUsers);
+      } catch (err) {
+        return response.status(500).send("Error while fetching users");
       }
     });
 
