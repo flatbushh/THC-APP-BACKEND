@@ -153,7 +153,7 @@ const start = async () => {
     app.get("/users", async (request, response) => {
       try {
         const users = await usersCollection.find({}); //find pobiera wszystkich userów z kolekcji usersCollection, {} -nie filtruję, poniewa pobieram wszystkich userów istniejących w bazie danych
-        const mappedUsers = users.map(({ _id, email }) => ({
+        const mappedUsers = users.map(({ _id, email }) => ({ //destrykturyzuje dane potrzebne do `Users array w komponencie Users
           id: _id,
           email: email,
         }));
