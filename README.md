@@ -5,14 +5,23 @@ This project is the backend server for a medical marijuana web application, prov
 🚀 Features
 
 🔍 Filter & Search Products: Allows users to filter products by attributes like producentName, genetics, THC level, and CBD level.
+
 ➕ Create Products: Users can add new products to the database.
+
 🔐 User Authentication: Provides user registration and login endpoints.
+
 🛠️ Role Management: Assign roles to users (admin, client, etc.).
-👤 User Management: Fetch a list of all users (admin access).
+
+👤 User Management: Fetch a list of all users.
+
 🛠️ Technologies Used
 
 Node.js: JavaScript runtime for building the backend.
+
 Express: Web framework for handling HTTP requests.
+
 MongoDB: NoSQL database for data storage.
+
 bcrypt: Library for hashing passwords.
+
 cors: Middleware to handle cross-origin requests.
