@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { MongoClient, ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
+import { Role } from "./roleEnum";
 
 const app = express();
 app.use(express.json());
@@ -21,38 +22,38 @@ const start = async () => {
     const usersCollection = db.collection("users");
 
     app.post("/products", async (request, response) => {
-      const filterParams = request.body;
-      console.log(filterParams);
+      const data = request.body;
+      console.log(data);
       // to nasze filterParams moze zawierac kazdy parametr, po ktorym chcemy filtrowac
-      const thcLevelRange = Array.isArray(filterParams.thcLevel);
-      const cbdLevelRange = Array.isArray(filterParams.cbdLevel);
+      const thcLevelRange = Array.isArray(data.thcLevel);
+      const cbdLevelRange = Array.isArray(data.cbdLevel);
 
-      const producentNameRegex = new RegExp(filterParams.producentName, "i");
+      const producentNameRegex = new RegExp(data.producentName, "i");
       // Query the database
 
       const products = await collection
         .aggregate([
           {
             $match: {
-              producentName: filterParams.producentName
+              producentName: data.producentName
                 ? {
                     $regex: producentNameRegex,
                   }
                 : {
                     $exists: true,
                   },
-              genetics: filterParams.genetics ?? { $exists: true },
-              terpen: filterParams.terpen ?? { $exists: true },
+              genetics: data.genetics ?? { $exists: true },
+              terpen: data.terpen ?? { $exists: true },
               thcLevel: thcLevelRange
                 ? {
-                    $gte: filterParams.thcLevel[0],
-                    $lte: filterParams.thcLevel[1],
+                    $gte: data.thcLevel[0],
+                    $lte: data.thcLevel[1],
                   }
                 : { $exists: true },
               cbdLevel: cbdLevelRange
                 ? {
-                    $gte: filterParams.cbdLevel[0],
-                    $lte: filterParams.cbdLevel[1],
+                    $gte: data.cbdLevel[0],
+                    $lte: data.cbdLevel[1],
                   }
                 : { $exists: true },
             },
@@ -106,9 +107,11 @@ const start = async () => {
         return response.status(504).send("User already exists");
       }
       const hashedPassword = await bcrypt.hash(data.password, 10);
+
       const newUser = {
         email: data.email,
         password: hashedPassword,
+        // role: Role.CLIENT,
       };
       try {
         await usersCollection.insertOne(newUser);
@@ -139,6 +142,22 @@ const start = async () => {
       return response.status(200).send("User logged");
     });
 
+    app.post("assign-role/:id", async (request, response) => {
+      const data = request.body;
+      console.log(data);
+      const id = new ObjectId(request.params.id); //converting the id parameter from the URL into a MongoDB ObjectId
+
+      try {
+        await usersCollection.updateOne(
+          { _id: id },
+          { $set: { role: data.role } }
+        );
+        return response.status(200).send("Role updated");
+      } catch (error) {
+        return response.status(500).send(error);
+      }
+    });
+
     app.get("/product/:id", async (request, response) => {
       const id = new ObjectId(request.params.id);
 
@@ -152,9 +171,11 @@ const start = async () => {
 
     app.get("/users", async (request, response) => {
       try {
-        const users = await usersCollection.find({}); //find pobiera wszystkich userów z kolekcji usersCollection, {} -nie filtruję, poniewa pobieram wszystkich userów istniejących w bazie danych
-        const mappedUsers = users.map(({ _id, email }) => ({ //destrykturyzuje dane potrzebne do `Users array w komponencie Users
-          id: _id,
+        const users = await usersCollection.find({}).toArray(); //find pobiera wszystkich userów z kolekcji usersCollection, {} -nie filtruję, poniewa pobieram wszystkich userów istniejących w bazie danych
+        console.log("Users from database:", users);
+        const mappedUsers = users.map(({ _id, email }) => ({
+          //destrykturyzuje dane potrzebne do DataGrid w komponencie Users (bez password)
+          id: _id.toString(), //zrobilem toString bo id to ObjectId
           email: email,
         }));
         return response.status(200).send(mappedUsers);
